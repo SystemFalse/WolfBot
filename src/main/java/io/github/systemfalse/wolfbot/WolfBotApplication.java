@@ -22,14 +22,43 @@
 
 package io.github.systemfalse.wolfbot;
 
+import io.github.systemfalse.wolfbot.bot.TelegramBot;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @SpringBootApplication
+@EnableScheduling
+@RequiredArgsConstructor
+@Slf4j
 public class WolfBotApplication {
+
+    private final TelegramBot telegramBot;
 
     public static void main(String[] args) {
         SpringApplication.run(WolfBotApplication.class, args);
     }
 
+    @Bean
+    public CommandLineRunner initTelegramBot() {
+        return args -> {
+            try {
+                telegramBot.init();
+                TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+                botsApi.registerBot(telegramBot);
+                log.info("Telegram bot was successfully registered and launched!");
+                log.info("Bot username: {}", telegramBot.getBotUsername());
+            } catch (TelegramApiException e) {
+                log.error("An error during telegram bot registration: ", e);
+                throw new RuntimeException("Failed to launch the bot", e);
+            }
+        };
+    }
 }
